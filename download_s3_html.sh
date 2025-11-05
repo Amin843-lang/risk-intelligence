@@ -84,13 +84,14 @@ generate_signature() {
     SIGNED_HEADERS="host;x-amz-content-sha256;x-amz-date"
     PAYLOAD_HASH="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"  # SHA256 of empty string
     
-    CANONICAL_REQUEST="${METHOD}\n${CANONICAL_URI}\n${CANONICAL_QUERY}\n${CANONICAL_HEADERS}\n${SIGNED_HEADERS}\n${PAYLOAD_HASH}"
+    # Use $'...' syntax for proper newline handling
+    CANONICAL_REQUEST=$''"${METHOD}"$'\n'"${CANONICAL_URI}"$'\n'"${CANONICAL_QUERY}"$'\n'"${CANONICAL_HEADERS}"$'\n'"${SIGNED_HEADERS}"$'\n'"${PAYLOAD_HASH}"
     
     # Create string to sign
     ALGORITHM="AWS4-HMAC-SHA256"
     CREDENTIAL_SCOPE="${DATE_STAMP}/${AWS_REGION}/s3/aws4_request"
     CANONICAL_REQUEST_HASH=$(sha256_hash "$CANONICAL_REQUEST")
-    STRING_TO_SIGN="${ALGORITHM}\n${DATE_VALUE}\n${CREDENTIAL_SCOPE}\n${CANONICAL_REQUEST_HASH}"
+    STRING_TO_SIGN=$''"${ALGORITHM}"$'\n'"${DATE_VALUE}"$'\n'"${CREDENTIAL_SCOPE}"$'\n'"${CANONICAL_REQUEST_HASH}"
     
     # Calculate signing key
     K_SECRET="AWS4${AWS_SECRET_ACCESS_KEY}"
@@ -99,8 +100,8 @@ generate_signature() {
     K_SERVICE=$(echo -n "s3" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:${K_REGION}" -binary | xxd -p -c 256)
     K_SIGNING=$(echo -n "aws4_request" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:${K_SERVICE}" -binary | xxd -p -c 256)
     
-    # Generate signature
-    SIGNATURE=$(echo -n -e "${STRING_TO_SIGN}" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:${K_SIGNING}" | sed 's/^.* //')
+    # Generate signature using printf instead of echo -n -e
+    SIGNATURE=$(printf '%s' "${STRING_TO_SIGN}" | openssl dgst -sha256 -mac HMAC -macopt "hexkey:${K_SIGNING}" | sed 's/^.* //')
     
     echo "$SIGNATURE"
 }
