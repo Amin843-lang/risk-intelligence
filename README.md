@@ -17,6 +17,11 @@ Deploy this application to Vercel, Netlify, or any static hosting platform.
 
 Your app will be deployed and accessible at: `https://your-project-name.vercel.app`
 
+**Configuration:**
+The `vercel.json` file is configured to serve the static HTML application. It handles:
+- Serving static files from the filesystem
+- Fallback routing to `index.html` for SPA-like behavior
+
 ### Deploy to Netlify
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/Amin843-lang/risk-intelligence)
@@ -55,12 +60,11 @@ Then visit `http://localhost:8000` in your browser.
 
 ```
 risk-intelligence/
-├── index.html          # Main application file (root level for deployment)
-├── risk-intelligence/  # Original subdirectory (kept for compatibility)
-│   └── index.html
+├── index.html          # Main application file
 ├── vercel.json        # Vercel deployment configuration
-├── README.md
-└── LICENSE
+├── .gitignore         # Git ignore rules
+├── README.md          # This file
+└── LICENSE            # License file
 ```
 
 ## 🛠️ Technical Details
