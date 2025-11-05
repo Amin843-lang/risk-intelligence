@@ -365,6 +365,11 @@
         Array.from(regionItems).forEach(item => {
             item.addEventListener('click', function() {
                 const regionName = this.querySelector('.region-name').textContent;
+                const regionRisk = this.querySelector('.region-risk').textContent;
+                // In a production environment, this would open a detailed analysis panel
+                console.log(`Region clicked: ${regionName}`);
+                console.log(`Risk details: ${regionRisk}`);
+                // Demo: Show alert for demonstration purposes
                 alert(`Detailed analysis for ${regionName} would be displayed here.\n\nThis is a demo of the Risk Intelligence platform.`);
             });
         });
@@ -372,14 +377,26 @@
         // Button interactions
         document.querySelectorAll('.btn').forEach(btn => {
             btn.addEventListener('click', function() {
+                const buttonText = this.textContent;
+                // In a production environment, this would trigger report generation/export
+                console.log(`Button clicked: ${buttonText}`);
+                // Demo: Show alert for demonstration purposes
                 alert('This feature would generate/export detailed risk intelligence reports.\n\nThis is a demo interface.');
             });
         });
 
         // Auto-refresh simulation (every 5 seconds for demo)
-        setInterval(() => {
+        // Store interval ID for potential cleanup
+        const updateInterval = setInterval(() => {
             document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
         }, 5000);
+
+        // Cleanup interval when page is hidden/closed (good practice)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                clearInterval(updateInterval);
+            }
+        });
     </script>
 </body>
 </html>
