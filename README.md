@@ -55,12 +55,11 @@ Then visit `http://localhost:8000` in your browser.
 
 ```
 risk-intelligence/
-├── index.html          # Main application file (root level for deployment)
-├── risk-intelligence/  # Original subdirectory (kept for compatibility)
-│   └── index.html
+├── index.html          # Main application file
 ├── vercel.json        # Vercel deployment configuration
-├── README.md
-└── LICENSE
+├── .gitignore         # Git ignore rules
+├── README.md          # This file
+└── LICENSE            # License file
 ```
 
 ## 🛠️ Technical Details
