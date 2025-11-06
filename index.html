@@ -482,37 +482,43 @@
       renderEventFeedWithSync();
     }
 
-    // ===================== Strict geopolitical relevance filter =====================
-    const GEOPOLITICAL_KEYWORDS = [
-      'tariff','export','import','trade','commerce','embargo','quota','customs','restriction',
-      'supply','supply chain','shipping','port','logistics','freight','congestion','container',
-      'sanction','sanctions','geopolitical','foreign policy','diplomat','ambassador','ministry',
-      'government','parliament','congress','regulation','policy','nationalization','expropriation',
-      'military','war','conflict','border','mobilization','nuclear','missile','weapon','strike',
-      'security','alliance','coalition','tension','dispute','territory','sovereignty',
-      'election','protest','unrest','instability','crisis','emergency',"coup d'etat",'coup',
-      'terrorism','extremist',
-      'economy','economic','inflation','recession','currency','markets','investment',
-      'oil','gas','energy','commodity','minerals','lithium','rare earth','agriculture','food security',
-      'energy crisis','power shortage','fuel'
-    ];
-    const BLACKLIST_KEYWORDS = [
-      'football','soccer','basketball','baseball','hockey','cricket','rugby','tennis','golf','mma',
-      'sports','tournament','championship','playoff','team','player','coach','league','nfl','nba','nhl',
-      'celebrity','entertainment','actor','actress','movie','film','cinema','tv','streaming','oscar','grammy','award',
-      'hollywood','bollywood','music','concert','singer','rapper','reality tv','gossip','dating','breakup',
-      'fashion','style','luxury','restaurant','dining','travel','vacation','resort','tourism',
-      'died','death','passed away','obituary','funeral','memorial','tribute','royal','king','queen','prince','princess',
-      'weather','forecast','sunny','cloudy','rain expected',
-      'trending','viral','meme','social media','instagram','tiktok','twitter','facebook','influencer','youtuber'
-    ];
-    function isRelevantEvent(title, description) {
-      const text = `${title} ${description}`.toLowerCase();
-      const hasSignal = GEOPOLITICAL_KEYWORDS.some(k => text.includes(k));
-      const hasBlacklist = BLACKLIST_KEYWORDS.some(k => text.includes(k));
-      return hasSignal && !hasBlacklist;
-    }
+    // ===================== ULTRA-STRICT FILTERING - Only 8 Critical Event Types =====================
+const CRITICAL_KEYWORDS = {
+  'War': ['war', 'conflict', 'military action', 'armed conflict', 'battle', 'combat', 'fighting', 'attack', 'strike', 'invasion', 'military operation'],
+  'Sanctions': ['sanction', 'sanctions', 'embargo', 'trade ban', 'restrictions', 'penalty', 'ban'],
+  'Tariffs': ['tariff', 'tariffs', 'duties', 'import duties', 'export duties', 'trade tax'],
+  'Trade Ban': ['trade ban', 'export ban', 'import ban', 'export control', 'trade restriction', 'export restriction'],
+  'Export Control': ['export control', 'technology ban', 'chip ban', 'semiconductor ban', 'dual-use', 'restricted export'],
+  'Climate Anomaly': ['climate crisis', 'climate anomaly', 'extreme weather', 'heatwave', 'drought', 'flood', 'drought crisis', 'climate disaster'],
+  'Port Congestion': ['port congestion', 'port strike', 'port closure', 'shipping delay', 'vessel congestion', 'terminal shutdown'],
+  'Conflict': ['military tension', 'border conflict', 'territorial dispute', 'mobilization', 'military buildup', 'nuclear threat', 'missile test']
+};
 
+function isRelevantEvent(title, description) {
+  const text = `${title} ${description}`.toLowerCase();
+  
+  // Must contain EXACTLY ONE of the 8 critical event types
+  for (const [category, keywords] of Object.entries(CRITICAL_KEYWORDS)) {
+    if (keywords.some(k => text.includes(k))) {
+      return true;  // Match found - keep this event
+    }
+  }
+  return false;  // No match - discard
+}
+
+  function categorizeEvent(title, description) {
+  const text = (title + ' ' + description).toLowerCase();
+  
+  // Check each critical category in order
+  for (const [category, keywords] of Object.entries(CRITICAL_KEYWORDS)) {
+    if (keywords.some(k => text.includes(k))) {
+      return category;
+    }
+  }
+  return 'Conflict';  // Default
+}
+  ];
+    
     // ===================== Feed pipeline =====================
     function stripHtml(s='') {
       const div = document.createElement('div'); div.innerHTML = s; return (div.textContent || div.innerText || '').trim();
@@ -522,10 +528,9 @@
       const text = (title + ' ' + description).toLowerCase();
       const keywords = {
         'Conflict':  ['war','military','conflict','attack','violence','terrorism','battle','missile','troop'],
-        'Sanctions': ['sanction','embargo','restriction','ban','penalty'],
-        'Trade':     ['trade','tariff','export','import','commerce','deal','agreement','customs'],
-        'Resources': ['oil','gas','gold','copper','lithium','mining','energy','commodity'],
-        'Political': ['election','government','policy','diplomatic','minister','president','parliament','congress'],
+        'Sanctions': ['sanction','embargo','restriction','ban'],
+        'Trade':     ['trade','tariff','export','import',],
+        'Resources': ['oil','gas','gold','copper','lithium', 'uranium','mining','energy','commodity'],
         'Economic':  ['economy','market','financial','gdp','inflation','investment','bank','currency']
       };
       for (const [cat, terms] of Object.entries(keywords)) {
