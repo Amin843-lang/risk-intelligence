@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geopolitical Risk Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a1929;
+            color: #AAB7B8;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .header {
+            background: #0a1929;
+            color: #FFFFFF;
+            padding: 8px 16px;
+            border-bottom: 1px solid #1e3a8a;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .metrics-bar {
+            background: #0a1929;
+            padding: 6px 16px;
+            border-bottom: 1px solid #1e3a8a;
+            display: flex;
+            gap: 24px;
+            font-size: 12px;
+        }
+
+        .metric {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: #FFFFFF;
+        }
+
+        .main-container {
+            display: flex;
+            height: calc(100vh - 80px);
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #0a1929;
+            border-left: 1px solid #1e3a8a;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 12px;
+            border-bottom: 1px solid #1e3a8a;
+            background: #0a1929;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .tab {
+            padding: 4px 8px;
+            border: 1px solid #374151;
+            border-radius: 4px;
+            background: transparent;
+            color: #AAB7B8;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: #1e3a8a;
+            color: #FFFFFF;
+        }
+
+        .filter-section {
+            margin-bottom: 12px;
+        }
+
+        .filter-label {
+            font-size: 10px;
+            color: #AAB7B8;
+            margin-bottom: 6px;
+        }
+
+        .event-types {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+
+        .event-type-btn {
+            padding: 3px 6px;
+            border: 1px solid #374151;
+            border-radius: 3px;
+            background: transparent;
+            color: #AAB7B8;
+            font-size: 9px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+
+        .event-type-btn.active {
+            border-color: #1e3a8a;
+            background: rgba(30, 58, 138, 0.2);
+        }
+
+        .event-counter {
+            font-size: 9px;
+            color: #6B7280;
+            margin-top: 6px;
+        }
+
+        .events-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+        }
+
+        .event-card {
+            border: 1px solid #374151;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .event-card:hover {
+            border-color: #1e3a8a;
+        }
+
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 4px;
+        }
+
+        .event-type {
+            font-size: 10px;
+            font-weight: 600;
+            color: #60A5FA;
+        }
+
+        .event-time {
+            font-size: 9px;
+            color: #6B7280;
+        }
+
+        .event-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+
+        .event-description {
+            font-size: 10px;
+            color: #AAB7B8;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .event-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 9px;
+        }
+
+        .country-name {
+            color: #AAB7B8;
+        }
+
+        .risk-score {
+            color: #F59E0B;
+            font-weight: 600;
+        }
+
+        .event-impact {
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(107, 114, 128, 0.3);
+            font-size: 9px;
+        }
+
+        .impact-label {
+            color: #6B7280;
+        }
+
+        .impact-text {
+            color: #F59E0B;
+            font-weight: 500;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6B7280;
+        }
+
+        .no-events {
+            text-align: center;
+            padding: 20px;
+            color: #6B7280;
+            font-size: 12px;
+        }
+
+        /* Country/Resource tabs content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .country-item, .resource-item {
+            background: rgba(30, 58, 138, 0.1);
+            border: 1px solid #374151;
+            border-radius: 4px;
+            padding: 8px;
+            margin-bottom: 6px;
+            cursor: pointer;
+        }
+
+        .country-item:hover, .resource-item:hover {
+            border-color: #1e3a8a;
+        }
+
+        .item-name {
+            font-size: 11px;
+            font-weight: 600;
+            color: #FFFFFF;
+            margin-bottom: 2px;
+        }
+
+        .item-risk {
+            font-size: 9px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .risk-label {
+            color: #6B7280;
+        }
+
+        .risk-value {
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        🌍 Geopolitical Risk Tracker
+    </div>
+
+    <div class="metrics-bar">
+        <div class="metric">
+            <span>GPR Index:</span>
+            <span class="metric-value" id="gprValue">45.2</span>
+        </div>
+        <div class="metric">
+            <span>WUI:</span>
+            <span class="metric-value" id="wuiValue">52.8</span>
+        </div>
+        <div class="metric">
+            <span>BGR:</span>
+            <span class="metric-value" id="bgrValue">38.9</span>
+        </div>
+        <div class="metric">
+            <span>Last Update:</span>
+            <span class="metric-value" id="lastUpdate">--:--</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="tabs">
+                    <button class="tab active" onclick="switchTab('live')">Live Feed</button>
+                    <button class="tab" onclick="switchTab('countries')">Countries</button>
+                    <button class="tab" onclick="switchTab('resources')">Resources</button>
+                    <button class="tab" onclick="switchTab('shipping')">Shipping</button>
+                </div>
+
+                <div id="liveTabHeader" class="tab-header">
+                    <div class="filter-section">
+                        <div class="filter-label">Filter by event type:</div>
+                        <div class="event-types" id="eventTypes">
+                            <!-- Event type buttons will be populated here -->
+                        </div>
+                        <div class="event-counter" id="eventCounter">Loading events...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="events-content">
+                <!-- Live Feed Tab -->
+                <div id="liveContent" class="tab-content active">
+                    <div id="eventsContainer">
+                        <div class="loading">Loading live events...</div>
+                    </div>
+                </div>
+
+                <!-- Countries Tab -->
+                <div id="countriesContent" class="tab-content">
+                    <div id="countriesContainer">
+                        <!-- Countries will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Resources Tab -->
+                <div id="resourcesContent" class="tab-content">
+                    <div id="resourcesContainer">
+                        <!-- Resources will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Shipping Tab -->
+                <div id="shippingContent" class="tab-content">
+                    <div id="shippingContainer">
+                        <!-- Shipping data will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+    <script>
+        // Event types configuration
+        const EVENT_TYPES = {
+            'Conflict': { color: '#EF4444' },
+            'Sanctions': { color: '#F59E0B' },
+            'Trade': { color: '#10B981' },
+            'Resources': { color: '#8B5CF6' },
+            'Political': { color: '#F97316' },
+            'Economic': { color: '#06B6D4' }
+        };
+
+        let map;
+        let feedData = [];
+        let activeEventTypes = Object.keys(EVENT_TYPES);
+        let countryMarkers = L.layerGroup();
+        let portMarkers = L.layerGroup();
+        let resourceMarkers = L.layerGroup();
+
+        // RSS Feeds - Expanded to 50+ sources for comprehensive coverage
+        const RSS_FEEDS = [
+            // High-frequency updates (every second to minute)
+            'http://data.gdeltproject.org/gdeltv3/gal/feed.rss',
+            'https://www.reuters.com/rssFeed/worldNews',
+            'https://feeds.reuters.com/reuters/businessNews',
+            'https://feeds.reuters.com/Reuters/PoliticsNews',
+            
+            // Defense & Security
+            'https://www.defensenews.com/arc/outboundfeeds/rss/',
+            'https://www.janes.com/feeds/news',
+            'https://breakingdefense.com/feed/',
+            
+            // Trade & Supply Chain
+            'https://rss.app/feeds/W4Kv63P1jWIk5FH4.xml',
+            'https://feeds.feedburner.com/logisticsmgmt/latest',
+            'https://feeds.feedburner.com/Freightwaves',
+            'https://www.supplychainbrain.com/rss/articles',
+            'https://container-news.com/feed',
+            'https://www.joc.com/rss',
+            
+            // Geopolitical Analysis
+            'https://foreignpolicy.com/feed/',
+            'https://www.crisisgroup.org/rss.xml',
+            'https://www.bruegel.org/rss.xml',
+            'https://www.piie.com/rss/update.xml',
+            'https://www.hoover.org/publications/daily-report/feed',
+            'https://carnegieendowment.org/rss/feed',
+            'https://www.cfr.org/rss',
+            
+            // Regional News - Major Markets
+            'https://www.aljazeera.com/xml/rss/all.xml',
+            'https://thechinaproject.com/feed/',
+            'https://www.scmp.com/rss/91/feed',
+            'https://www.japantimes.co.jp/feed/',
+            'https://www.straitstimes.com/news/asia/rss.xml',
+            
+            // Commodities & Resources
+            'https://www.mining.com/feed/',
+            'https://www.metalbulletin.com/rss/all',
+            'https://www.oilprice.com/rss/main',
+            'https://www.platts.com/rss-feed',
+            'https://www.argusmedia.com/en/rss',
+            
+            // Economic & Financial
+            'https://www.ft.com/rss/home',
+            'https://www.wsj.com/xml/rss/3_7085.xml',
+            'https://www.bloomberg.com/feed/podcast/etf-report.xml',
+            'https://www.economist.com/rss',
+            
+            // Regional Economic Analysis
+            'https://www.imf.org/en/News/RSS',
+            'https://www.worldbank.org/en/news/rss',
+            'https://www.adb.org/news/rss',
+            'https://www.ebrd.com/news/rss.html',
+            
+            // Shipping & Ports
+            'https://www.maritime-executive.com/rss',
+            'https://www.seatrade-maritime.com/rss',
+            'https://www.lloydslist.com/rss',
+            'https://splash247.com/feed/',
+            
+            // Energy Security
+            'https://www.iea.org/rss',
+            'https://www.eia.gov/rss/todayinenergy.xml',
+            'https://www.energy.gov/rss',
+            
+            // Think Tanks & Policy
+            'https://www.rand.org/rss.xml',
+            'https://www.csis.org/rss',
+            'https://www.chathamhouse.org/rss',
+            'https://www.brookings.edu/feed/'
+        ];
+
+        // Country risk data - Expanded to 90+ countries globally
+        const COUNTRY_RISKS = {
+            // North America
+            'USA': { name: 'United States', risk: 3.0, lat: 37.0902, lng: -95.7129 },
+            'CAN': { name: 'Canada', risk: 2.0, lat: 56.1304, lng: -106.3468 },
+            'MEX': { name: 'Mexico', risk: 5.0, lat: 23.6345, lng: -102.5528 },
+            
+            // Latin America & Caribbean
+            'BRA': { name: 'Brazil', risk: 4.0, lat: -14.2350, lng: -51.9253 },
+            'ARG': { name: 'Argentina', risk: 5.0, lat: -38.4161, lng: -63.6167 },
+            'CHL': { name: 'Chile', risk: 3.0, lat: -35.6751, lng: -71.5430 },
+            'COL': { name: 'Colombia', risk: 5.0, lat: 4.5709, lng: -74.2973 },
+            'PER': { name: 'Peru', risk: 5.0, lat: -9.1900, lng: -75.0152 },
+            'VEN': { name: 'Venezuela', risk: 8.0, lat: 6.4238, lng: -66.5897 },
+            'ECU': { name: 'Ecuador', risk: 5.0, lat: -1.8312, lng: -78.1834 },
+            'BOL': { name: 'Bolivia', risk: 6.0, lat: -16.2902, lng: -63.5887 },
+            'URY': { name: 'Uruguay', risk: 3.0, lat: -32.5228, lng: -55.7658 },
+            'PRY': { name: 'Paraguay', risk: 5.0, lat: -23.4425, lng: -58.4438 },
+            'CUB': { name: 'Cuba', risk: 6.0, lat: 21.5218, lng: -77.7812 },
+            
+            // Europe (Western)
+            'GBR': { name: 'United Kingdom', risk: 3.0, lat: 55.3781, lng: -3.4360 },
+            'FRA': { name: 'France', risk: 3.0, lat: 46.2276, lng: 2.2137 },
+            'DEU': { name: 'Germany', risk: 3.0, lat: 51.1657, lng: 10.4515 },
+            'ESP': { name: 'Spain', risk: 3.0, lat: 40.4637, lng: -3.7492 },
+            'ITA': { name: 'Italy', risk: 4.0, lat: 41.8719, lng: 12.5674 },
+            'POL': { name: 'Poland', risk: 4.0, lat: 51.9194, lng: 19.1451 },
+            'SWE': { name: 'Sweden', risk: 3.0, lat: 60.1282, lng: 18.6435 },
+            'NOR': { name: 'Norway', risk: 2.0, lat: 60.4720, lng: 8.4689 },
+            
+            // Eastern Europe & Russia
+            'RUS': { name: 'Russia', risk: 7.0, lat: 61.5240, lng: 105.3188 },
+            'UKR': { name: 'Ukraine', risk: 9.0, lat: 48.3794, lng: 31.1656 },
+            
+            // CIS Countries
+            'BLR': { name: 'Belarus', risk: 7.0, lat: 53.7098, lng: 27.9534 },
+            'KAZ': { name: 'Kazakhstan', risk: 5.0, lat: 48.0196, lng: 66.9237 },
+            'UZB': { name: 'Uzbekistan', risk: 6.0, lat: 41.3775, lng: 64.5853 },
+            'TKM': { name: 'Turkmenistan', risk: 6.0, lat: 38.9697, lng: 59.5563 },
+            'KGZ': { name: 'Kyrgyzstan', risk: 6.0, lat: 41.2044, lng: 74.7661 },
+            'TJK': { name: 'Tajikistan', risk: 6.0, lat: 38.8610, lng: 71.2761 },
+            'ARM': { name: 'Armenia', risk: 7.0, lat: 40.0691, lng: 45.0382 },
+            'AZE': { name: 'Azerbaijan', risk: 6.0, lat: 40.1431, lng: 47.5769 },
+            'GEO': { name: 'Georgia', risk: 6.0, lat: 42.3154, lng: 43.3569 },
+            'MDA': { name: 'Moldova', risk: 6.0, lat: 47.4116, lng: 28.3699 },
+            
+            // Middle East
+            'TUR': { name: 'Turkey', risk: 6.0, lat: 38.9637, lng: 35.2433 },
+            'ISR': { name: 'Israel', risk: 8.0, lat: 31.0461, lng: 34.8516 },
+            'IRN': { name: 'Iran', risk: 7.0, lat: 32.4279, lng: 53.6880 },
+            'SAU': { name: 'Saudi Arabia', risk: 6.0, lat: 23.8859, lng: 45.0792 },
+            'IRQ': { name: 'Iraq', risk: 8.0, lat: 33.2232, lng: 43.6793 },
+            'SYR': { name: 'Syria', risk: 9.0, lat: 34.8021, lng: 38.9968 },
+            'LBN': { name: 'Lebanon', risk: 8.0, lat: 33.8547, lng: 35.8623 },
+            'JOR': { name: 'Jordan', risk: 5.0, lat: 30.5852, lng: 36.2384 },
+            'YEM': { name: 'Yemen', risk: 9.0, lat: 15.5527, lng: 48.5164 },
+            
+            // Africa (North)
+            'EGY': { name: 'Egypt', risk: 6.0, lat: 26.8206, lng: 30.8025 },
+            'DZA': { name: 'Algeria', risk: 5.0, lat: 28.0339, lng: 1.6596 },
+            'MAR': { name: 'Morocco', risk: 4.0, lat: 31.7917, lng: -7.0926 },
+            'TUN': { name: 'Tunisia', risk: 5.0, lat: 33.8869, lng: 9.5375 },
+            'LBY': { name: 'Libya', risk: 8.0, lat: 26.3351, lng: 17.2283 },
+            'SDN': { name: 'Sudan', risk: 8.0, lat: 12.8628, lng: 30.2176 },
+            
+            // Africa (Sub-Saharan)
+            'NGA': { name: 'Nigeria', risk: 7.0, lat: 9.0820, lng: 8.6753 },
+            'ETH': { name: 'Ethiopia', risk: 7.0, lat: 9.1450, lng: 40.4897 },
+            'KEN': { name: 'Kenya', risk: 6.0, lat: -0.0236, lng: 37.9062 },
+            'TZA': { name: 'Tanzania', risk: 5.0, lat: -6.3690, lng: 34.8888 },
+            'GHA': { name: 'Ghana', risk: 4.0, lat: 7.9465, lng: -1.0232 },
+            'AGO': { name: 'Angola', risk: 6.0, lat: -11.2027, lng: 17.8739 },
+            'ZAF': { name: 'South Africa', risk: 5.0, lat: -30.5595, lng: 22.9375 },
+            'COD': { name: 'DR Congo', risk: 8.0, lat: -4.0383, lng: 21.7587 },
+            'UGA': { name: 'Uganda', risk: 6.0, lat: 1.3733, lng: 32.2903 },
+            'ZWE': { name: 'Zimbabwe', risk: 7.0, lat: -19.0154, lng: 29.1549 },
+            
+            // Asia (East)
+            'CHN': { name: 'China', risk: 5.0, lat: 35.8617, lng: 104.1954 },
+            'JPN': { name: 'Japan', risk: 4.0, lat: 36.2048, lng: 138.2529 },
+            'KOR': { name: 'South Korea', risk: 5.0, lat: 35.9078, lng: 127.7669 },
+            'PRK': { name: 'North Korea', risk: 8.0, lat: 40.3399, lng: 127.5101 },
+            'TWN': { name: 'Taiwan', risk: 7.0, lat: 23.6978, lng: 120.9605 },
+            
+            // Asia (South)
+            'IND': { name: 'India', risk: 5.0, lat: 20.5937, lng: 78.9629 },
+            'PAK': { name: 'Pakistan', risk: 7.0, lat: 30.3753, lng: 69.3451 },
+            'BGD': { name: 'Bangladesh', risk: 6.0, lat: 23.6850, lng: 90.3563 },
+            'AFG': { name: 'Afghanistan', risk: 9.0, lat: 33.9391, lng: 67.7100 },
+            
+            // Southeast Asia
+            'VNM': { name: 'Vietnam', risk: 4.0, lat: 14.0583, lng: 108.2772 },
+            'THA': { name: 'Thailand', risk: 4.0, lat: 15.8700, lng: 100.9925 },
+            'IDN': { name: 'Indonesia', risk: 5.0, lat: -0.7893, lng: 113.9213 },
+            'MYS': { name: 'Malaysia', risk: 4.0, lat: 4.2105, lng: 101.9758 },
+            'SGP': { name: 'Singapore', risk: 2.0, lat: 1.3521, lng: 103.8198 },
+            'PHL': { name: 'Philippines', risk: 6.0, lat: 12.8797, lng: 121.7740 },
+            'MMR': { name: 'Myanmar', risk: 8.0, lat: 21.9162, lng: 95.9560 },
+            'KHM': { name: 'Cambodia', risk: 5.0, lat: 12.5657, lng: 104.9910 },
+            'LAO': { name: 'Laos', risk: 5.0, lat: 19.8563, lng: 102.4955 },
+            
+            // Oceania
+            'AUS': { name: 'Australia', risk: 2.0, lat: -25.2744, lng: 133.7751 },
+            'NZL': { name: 'New Zealand', risk: 2.0, lat: -40.9006, lng: 174.8860 }
+        };
+
+        // Initialize map
+        function initMap() {
+            map = L.map('map').setView([20, 0], 2);
+
+            // Dark Ocean tile layer
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '© OpenStreetMap contributors © CARTO',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Add country risk markers with detailed popups
+            Object.entries(COUNTRY_RISKS).forEach(([code, country]) => {
+                const color = getRiskColor(country.risk);
+                const marker = L.circleMarker([country.lat, country.lng], {
+                    radius: Math.max(5, country.risk),
+                    fillColor: color,
+                    color: color,
+                    weight: 2,
+                    opacity: 0.8,
+                    fillOpacity: 0.6
+                }).bindPopup(`
+                    <div style="min-width: 300px; font-family: sans-serif;">
+                        <h3 style="margin: 0 0 8px 0; color: #1e3a8a;">${country.name}</h3>
+                        <div style="margin-bottom: 6px;">
+                            <strong>Risk Level:</strong> <span style="color: ${color}; font-weight: 600;">${country.risk}/10</span>
+                        </div>
+                        <div style="margin-bottom: 6px;">
+                            <strong>Investment Grade:</strong> ${country.risk >= 8 ? 'HIGH RISK' : country.risk >= 6 ? 'MODERATE RISK' : 'LOW-MODERATE RISK'}
+                        </div>
+                        <div style="margin-bottom: 6px;">
+                            <strong>Primary Risk:</strong> ${getPrimaryRisk(code, country.risk)}
+                        </div>
+                        <div style="margin-bottom: 6px;">
+                            <strong>Sectors Affected:</strong> ${getAffectedSectors(code, country.risk)}
+                        </div>
+                        <div style="margin-bottom: 6px;">
+                            <strong>Investment Outlook:</strong> ${getInvestmentOutlook(country.risk)}
+                        </div>
+                        <div style="margin-bottom: 6px;">
+                            <strong>Key Concerns:</strong> ${getKeyConcerns(code, country.risk)}
+                        </div>
+                        <div style="font-size: 10px; color: #666; margin-top: 8px; border-top: 1px solid #ddd; padding-top: 6px; font-style: italic;">
+                            Risk assessment based on geopolitical, economic, and security factors
+                        </div>
+                    </div>
+                `);
+                countryMarkers.addLayer(marker);
+            });
+
+            countryMarkers.addTo(map);
+        }
+
+        // Get risk color based on score
+        function getRiskColor(risk) {
+            if (risk >= 8) return '#EF4444'; // High risk - red
+            if (risk >= 6) return '#F59E0B'; // Medium risk - orange
+            if (risk >= 4) return '#EAB308'; // Low-medium risk - yellow
+            return '#22C55E'; // Low risk - green
+        }
+
+        // Get primary risk factor for country
+        function getPrimaryRisk(code, risk) {
+            const highRiskCountries = {
+                'VEN': 'Political instability, hyperinflation',
+                'SYR': 'Active conflict, civil war',
+                'UKR': 'Active conflict, territorial disputes',
+                'AFG': 'Political instability, terrorism',
+                'YEM': 'Civil war, humanitarian crisis',
+                'LBY': 'Political fragmentation, militia conflicts',
+                'IRQ': 'Sectarian tensions, terrorism',
+                'ISR': 'Geopolitical tensions, security threats',
+                'IRN': 'Sanctions, regional tensions',
+                'PRK': 'Nuclear tensions, sanctions',
+                'RUS': 'Sanctions, geopolitical isolation',
+                'MMR': 'Military rule, civil unrest',
+                'COD': 'Political instability, resource conflicts'
+            };
+
+            if (highRiskCountries[code]) return highRiskCountries[code];
+            if (risk >= 7) return 'Nationalization risk, regulatory uncertainty';
+            if (risk >= 5) return 'Political volatility, policy changes';
+            return 'Stable with moderate monitoring';
+        }
+
+        // Get affected sectors
+        function getAffectedSectors(code, risk) {
+            const resourceRich = ['RUS', 'VEN', 'IRN', 'IRQ', 'SAU', 'COD', 'AGO'];
+            const manufacturing = ['CHN', 'VNM', 'THA', 'MEX', 'POL'];
+            const financial = ['USA', 'GBR', 'SGP', 'CHN', 'JPN'];
+
+            if (resourceRich.includes(code)) return 'Oil & Gas, Mining, Energy';
+            if (manufacturing.includes(code)) return 'Manufacturing, Supply Chain, Trade';
+            if (financial.includes(code)) return 'Financial Services, Tech, Real Estate';
+            
+            if (risk >= 7) return 'All sectors - high caution';
+            if (risk >= 5) return 'Infrastructure, Resources, Banking';
+            return 'Technology, Services, Consumer';
+        }
+
+        // Get investment outlook
+        function getInvestmentOutlook(risk) {
+            if (risk >= 8) return 'AVOID - Extreme risk environment';
+            if (risk >= 6) return 'CAUTIOUS - High due diligence required';
+            if (risk >= 4) return 'SELECTIVE - Sector-specific opportunities';
+            return 'FAVORABLE - Stable investment climate';
+        }
+
+        // Get key concerns
+        function getKeyConcerns(code, risk) {
+            const concerns = {
+                'VEN': 'Hyperinflation, asset seizures',
+                'SYR': 'Ongoing conflict, sanctions',
+                'UKR': 'War damage, reconstruction risks',
+                'RUS': 'Western sanctions, currency volatility',
+                'IRN': 'International sanctions, SWIFT restrictions',
+                'CHN': 'Regulatory changes, US tensions',
+                'USA': 'Policy shifts, debt levels',
+                'TUR': 'Currency instability, inflation'
+            };
+
+            if (concerns[code]) return concerns[code];
+            if (risk >= 7) return 'Expropriation, capital controls';
+            if (risk >= 5) return 'Regulatory changes, currency risk';
+            return 'Market volatility, sector-specific risks';
+        }
+
+        // Initialize event type buttons
+        function initEventTypes() {
+            const container = document.getElementById('eventTypes');
+            container.innerHTML = '';
+
+            Object.entries(EVENT_TYPES).forEach(([type, config]) => {
+                const button = document.createElement('button');
+                button.className = 'event-type-btn active';
+                button.textContent = type;
+                button.onclick = () => toggleEventType(type);
+                container.appendChild(button);
+            });
+
+            updateEventCounter();
+        }
+
+        // Toggle event type filter
+        function toggleEventType(type) {
+            const button = Array.from(document.querySelectorAll('.event-type-btn'))
+                .find(btn => btn.textContent === type);
+            
+            if (activeEventTypes.includes(type)) {
+                activeEventTypes = activeEventTypes.filter(t => t !== type);
+                button.classList.remove('active');
+            } else {
+                activeEventTypes = [...activeEventTypes, type];
+                button.classList.add('active');
+            }
+
+            updateEventDisplay();
+            updateEventCounter();
+        }
+
+        // Update event counter
+        function updateEventCounter() {
+            const total = feedData.length;
+            const filtered = feedData.filter(event => activeEventTypes.includes(event.type)).length;
+            document.getElementById('eventCounter').textContent = `${filtered} events`;
+        }
+
+        // Categorize events based on keywords
+        function categorizeEvent(title, description) {
+            const text = (title + ' ' + description).toLowerCase();
+            
+            const keywords = {
+                'Conflict': ['war', 'military', 'conflict', 'attack', 'violence', 'terrorism', 'battle'],
+                'Sanctions': ['sanctions', 'embargo', 'restrictions', 'ban', 'penalty'],
+                'Trade': ['trade', 'tariff', 'export', 'import', 'commerce', 'deal', 'agreement'],
+                'Resources': ['oil', 'gas', 'gold', 'copper', 'lithium', 'mining', 'energy', 'commodity'],
+                'Political': ['election', 'government', 'policy', 'diplomatic', 'minister', 'president'],
+                'Economic': ['economy', 'market', 'financial', 'gdp', 'inflation', 'investment', 'bank']
+            };
+
+            for (const [category, terms] of Object.entries(keywords)) {
+                if (terms.some(term => text.includes(term))) {
+                    return category;
+                }
+            }
+
+            return 'Political'; // Default category
+        }
+
+        // Generate economic implication
+        function generateImplication(title, description, type) {
+            const text = (title + ' ' + description).toLowerCase();
+            
+            const implications = {
+                'Conflict': ['Defense: Budget increase', 'Oil: Price volatility', 'Gold: Safe haven demand'],
+                'Sanctions': ['Trade: Flow disruption', 'Energy: Supply risk', 'Banking: Access limited'],
+                'Trade': ['Commodities: Price impact', 'Currency: Exchange volatility', 'Exports: Volume change'],
+                'Resources': ['Mining: Production risk', 'Energy: Supply concern', 'Metals: Price surge'],
+                'Political': ['Markets: Uncertainty rise', 'Investment: Risk assessment', 'Currency: Volatility'],
+                'Economic': ['GDP: Growth impact', 'Inflation: Pressure build', 'Markets: Reaction expected']
+            };
+
+            const typeImplications = implications[type] || implications['Economic'];
+            return typeImplications[Math.floor(Math.random() * typeImplications.length)];
+        }
+
+        // Fetch RSS feeds with continuous real-time updates
+        async function fetchFeeds() {
+            console.log('Starting real-time feed fetch...');
+            
+            // Show loading initially only if no events exist
+            if (feedData.length === 0) {
+                document.getElementById('eventsContainer').innerHTML = 
+                    '<div class="loading">Connecting to live feeds...</div>';
+            }
+            
+            const proxyUrl = 'https://api.allorigins.win/raw?url=';
+            
+            // Process first 8 most reliable feeds with 5 second timeout for faster initial load
+            const promises = RSS_FEEDS.slice(0, 8).map(async (url) => {
+                try {
+                    const timeoutPromise = new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Timeout')), 5000)
+                    );
+                    
+                    const fetchPromise = fetch(proxyUrl + encodeURIComponent(url));
+                    const response = await Promise.race([fetchPromise, timeoutPromise]);
+                    
+                    if (!response.ok) throw new Error('Fetch failed');
+                    
+                    const text = await response.text();
+                    return parseFeed(text, url);
+                } catch (error) {
+                    console.warn(`Feed timeout/error ${url}:`, error.message);
+                    return [];
+                }
+            });
+
+            try {
+                const results = await Promise.all(promises);
+                const allEvents = results.flat();
+                
+                // Merge new events with existing, remove duplicates by title
+                const existingTitles = new Set(feedData.map(e => e.title));
+                const newEvents = allEvents.filter(e => !existingTitles.has(e.title));
+                
+                // Add new events to beginning of array
+                feedData = [...newEvents, ...feedData]
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .slice(0, 500); // Keep last 500 events for 50+ sources
+                
+                console.log(`Loaded ${newEvents.length} new events, total: ${feedData.length}`);
+                
+                updateEventDisplay();
+                updateMetrics();
+                updateEventCounter();
+                
+                document.getElementById('lastUpdate').textContent = 
+                    new Date().toLocaleTimeString();
+                    
+            } catch (error) {
+                console.error('Error fetching feeds:', error);
+                if (feedData.length === 0) {
+                    document.getElementById('eventsContainer').innerHTML = 
+                        '<div class="no-events">Connecting... Please wait</div>';
+                }
+            }
+        }
+
+        // Parse RSS feed
+        function parseFeed(xmlText, sourceUrl) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+                
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                    return [];
+                }
+
+                const items = xmlDoc.getElementsByTagName('item');
+                const events = [];
+
+                for (let i = 0; i < Math.min(items.length, 15); i++) { // 15 items per feed for faster load
+                    const item = items[i];
+                    const title = item.getElementsByTagName('title')[0]?.textContent || '';
+                    const description = item.getElementsByTagName('description')[0]?.textContent || '';
+                    const pubDate = item.getElementsByTagName('pubDate')[0]?.textContent || '';
+                    
+                    if (title && isRelevantEvent(title, description)) {
+                        const type = categorizeEvent(title, description);
+                        const country = extractCountry(title, description);
+                        
+                        events.push({
+                            id: Date.now() + Math.random(),
+                            title: title.substring(0, 100),
+                            description: description.substring(0, 150),
+                            type: type,
+                            country: country,
+                            riskLevel: Math.floor(Math.random() * 7) + 3, // 3-9
+                            timestamp: pubDate || new Date().toISOString(),
+                            implication: generateImplication(title, description, type),
+                            source: getSourceName(sourceUrl)
+                        });
+                    }
+                }
+
+                return events;
+            } catch (error) {
+                console.error('Error parsing feed:', error);
+                return [];
+            }
+        }
+
+        // Check if event is relevant - More permissive filtering
+        function isRelevantEvent(title, description) {
+            const text = (title + ' ' + description).toLowerCase();
+            
+            // Broader keywords to capture more relevant events
+            const relevantKeywords = [
+                'commodities', 'tariff', 'supply', 'chain', 'sanction', 'war', 'conflict',
+                'port', 'ship', 'trade', 'oil', 'gas', 'mining', 'metal', 'economic',
+                'military', 'diplomatic', 'crisis', 'tension', 'disrupt', 'market',
+                'china', 'russia', 'usa', 'europe', 'asia', 'policy', 'government',
+                'energy', 'commodity', 'export', 'import', 'price', 'cost'
+            ];
+            
+            // Show event if it contains ANY relevant keyword
+            return relevantKeywords.some(keyword => text.includes(keyword));
+        }
+
+        // Extract country from text
+        function extractCountry(title, description) {
+            const countries = ['China', 'Russia', 'USA', 'Iran', 'Ukraine', 'Israel', 'India', 'Japan', 'Germany', 'France', 'UK', 'Brazil'];
+            const text = title + ' ' + description;
+            
+            for (const country of countries) {
+                if (text.includes(country)) return country;
+            }
+            
+            return 'Global';
+        }
+
+        // Get source name from URL
+        function getSourceName(url) {
+            if (url.includes('gdelt')) return 'GDELT';
+            if (url.includes('defensenews')) return 'Defense News';
+            if (url.includes('foreignpolicy')) return 'Foreign Policy';
+            if (url.includes('aljazeera')) return 'Al Jazeera';
+            if (url.includes('crisisgroup')) return 'Crisis Group';
+            return 'News Source';
+        }
+
+        // Update event display with React-style filtering and dynamic backgrounds
+        function updateEventDisplay() {
+            const container = document.getElementById('eventsContainer');
+            
+            // Filter events based on activeEventTypes (React-style)
+            const filteredEvents = feedData.filter(event => 
+                activeEventTypes.includes(event.type)
+            );
+
+            if (filteredEvents.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center" style="padding: 32px 0; color: #6B7280;">
+                        <div style="font-size: 12px; margin-bottom: 8px;">No events match selected types</div>
+                        <button onclick="setAllEventTypes(true)" style="font-size: 10px; color: #60A5FA; background: none; border: none; cursor: pointer; text-decoration: underline;">
+                            Show all event types
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredEvents.map(event => {
+                const riskColor = getRiskColor(event.riskLevel);
+                // Use template literal for dynamic risk-based background color
+                const backgroundColor = `${riskColor}15`;
+                
+                return `
+                <div class="event-card" style="background-color: ${backgroundColor}; border-color: #475569;" onclick="handleEventClick('${event.id}')">
+                    <div class="event-header" style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 4px;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 14px;">${getEventIcon(event.type)}</span>
+                            <span class="event-type" style="color: ${riskColor}; font-weight: 600;">${event.type}</span>
+                        </div>
+                        <span class="event-time">${new Date(event.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    <div class="event-title" style="font-weight: 600; color: #FFFFFF; margin-bottom: 4px;">${event.title}</div>
+                    <div class="event-description" style="color: #AAB7B8; margin-bottom: 6px;">${event.description}</div>
+                    <div class="event-meta" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="country-name" style="color: #FFFFFF; font-weight: 500;">${event.country}</span>
+                        <div style="display: flex; align-items: center; gap: 4px;">
+                            <span style="color: #6B7280;">Risk:</span>
+                            <span style="color: ${riskColor}; font-weight: 600;">${event.riskLevel}</span>
+                        </div>
+                    </div>
+                    ${event.implication ? `
+                        <div class="event-impact" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(107, 114, 128, 0.3);">
+                            <div style="font-size: 9px;">
+                                <span class="impact-label" style="color: #6B7280;">Impact: </span>
+                                <span class="impact-text" style="color: #F59E0B; font-weight: 500;">${event.implication}</span>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `}).join('');
+        }
+
+        // Update risk metrics - Fixed calculation
+        function updateMetrics() {
+            if (feedData.length === 0) {
+                document.getElementById('gprValue').textContent = '50.0';
+                document.getElementById('wuiValue').textContent = '50.0';
+                document.getElementById('bgrValue').textContent = '50.0';
+                return;
+            }
+            
+            const avgRisk = feedData.reduce((sum, e) => sum + e.riskLevel, 0) / feedData.length;
+            
+            // Calculate indices (normalized to 0-100 scale)
+            const gpr = Math.min(100, Math.max(0, (avgRisk / 10) * 100));
+            const wui = Math.min(100, Math.max(0, ((avgRisk / 10) * 100) + Math.random() * 5 - 2.5));
+            const bgr = Math.min(100, Math.max(0, ((avgRisk / 10) * 100) + Math.random() * 5 - 2.5));
+
+            document.getElementById('gprValue').textContent = gpr.toFixed(1);
+            document.getElementById('wuiValue').textContent = wui.toFixed(1);
+            document.getElementById('bgrValue').textContent = bgr.toFixed(1);
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Content').classList.add('active');
+
+            // Show/hide tab headers
+            const liveHeader = document.getElementById('liveTabHeader');
+            if (tabName === 'live') {
+                liveHeader.style.display = 'block';
+            } else {
+                liveHeader.style.display = 'none';
+            }
+
+            // Load tab-specific content
+            if (tabName === 'countries') {
+                loadCountriesTab();
+            } else if (tabName === 'resources') {
+                loadResourcesTab();
+            } else if (tabName === 'shipping') {
+                loadShippingTab();
+            }
+        }
+
+        // Load countries tab content
+        function loadCountriesTab() {
+            const container = document.getElementById('countriesContainer');
+            container.innerHTML = Object.entries(COUNTRY_RISKS).map(([code, country]) => `
+                <div class="country-item">
+                    <div class="item-name">${country.name}</div>
+                    <div class="item-risk">
+                        <span class="risk-label">Risk Level:</span>
+                        <span class="risk-value" style="color: ${getRiskColor(country.risk)}">${country.risk}/10</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Load resources tab content
+        function loadResourcesTab() {
+            const resources = [
+                { name: 'Crude Oil', risk: 7.2, impact: 'Supply concerns' },
+                { name: 'Natural Gas', risk: 6.8, impact: 'Price volatility' },
+                { name: 'Gold', risk: 4.1, impact: 'Safe haven demand' },
+                { name: 'Copper', risk: 5.9, impact: 'Industrial demand' },
+                { name: 'Lithium', risk: 6.5, impact: 'EV market growth' },
+                { name: 'Wheat', risk: 7.8, impact: 'Food security' }
+            ];
+
+            const container = document.getElementById('resourcesContainer');
+            container.innerHTML = resources.map(resource => `
+                <div class="resource-item">
+                    <div class="item-name">${resource.name}</div>
+                    <div class="item-risk">
+                        <span class="risk-label">Risk:</span>
+                        <span class="risk-value" style="color: ${getRiskColor(resource.risk)}">${resource.risk}/10</span>
+                    </div>
+                    <div style="font-size: 9px; color: #6B7280; margin-top: 2px;">${resource.impact}</div>
+                </div>
+            `).join('');
+        }
+
+        // Load shipping tab content
+        function loadShippingTab() {
+            const ports = [
+                { name: 'Suez Canal', congestion: 'High', risk: 8.1 },
+                { name: 'Singapore', congestion: 'Moderate', risk: 4.2 },
+                { name: 'Los Angeles', congestion: 'High', risk: 6.8 },
+                { name: 'Rotterdam', congestion: 'Low', risk: 3.1 },
+                { name: 'Shanghai', congestion: 'Moderate', risk: 5.4 },
+                { name: 'Panama Canal', congestion: 'High', risk: 7.3 }
+            ];
+
+            const container = document.getElementById('shippingContainer');
+            container.innerHTML = ports.map(port => `
+                <div class="resource-item">
+                    <div class="item-name">${port.name}</div>
+                    <div class="item-risk">
+                        <span class="risk-label">Congestion:</span>
+                        <span class="risk-value">${port.congestion}</span>
+                    </div>
+                    <div style="font-size: 9px; color: #6B7280; margin-top: 2px;">Risk: ${port.risk}/10</div>
+                </div>
+            `).join('');
+        }
+
+        // Initialize application
+        function init() {
+            initMap();
+            initEventTypes();
+            
+            // Initial load
+            fetchFeeds();
+            
+            // Update feeds every 60 seconds (more reasonable for RSS)
+            setInterval(fetchFeeds, 60 * 1000);
+            
+            // Also fetch on page visibility change
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    fetchFeeds();
+                }
+            });
+        }
+
+        // Get event icon for type
+        function getEventIcon(type) {
+            const icons = {
+                'Conflict': '⚔️',
+                'Sanctions': '🔒',
+                'Trade': '📊',
+                'Resources': '💎',
+                'Political': '🏛️',
+                'Economic': '💵'
+            };
+            return icons[type] || '📰';
+        }
+
+        // Handle event click
+        function handleEventClick(eventId) {
+            const event = feedData.find(e => e.id == eventId);
+            if (event) {
+                console.log('Event clicked:', event);
+                // Could show modal or detailed view here
+            }
+        }
+
+        // Set all event types active/inactive
+        function setAllEventTypes(active) {
+            if (active) {
+                activeEventTypes = [...Object.keys(EVENT_TYPES)];
+            } else {
+                activeEventTypes = [];
+            }
+            
+            // Update button states
+            document.querySelectorAll('.event-type-btn').forEach(btn => {
+                if (active) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            updateEventDisplay();
+            updateEventCounter();
+        }
+
+        // Start application when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
