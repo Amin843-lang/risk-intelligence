@@ -483,41 +483,36 @@
     }
 
     // ===================== ULTRA-STRICT FILTERING - Only 8 Critical Event Types =====================
-const CRITICAL_KEYWORDS = {
-  'War': ['war', 'conflict', 'military action', 'armed conflict', 'battle', 'combat', 'fighting', 'attack', 'strike', 'invasion', 'military operation'],
-  'Sanctions': ['sanction', 'sanctions', 'embargo', 'trade ban', 'restrictions', 'penalty', 'ban'],
-  'Tariffs': ['tariff', 'tariffs', 'duties', 'import duties', 'export duties', 'trade tax'],
-  'Trade Ban': ['trade ban', 'export ban', 'import ban', 'export control', 'trade restriction', 'export restriction'],
-  'Export Control': ['export control', 'technology ban', 'chip ban', 'semiconductor ban', 'dual-use', 'restricted export'],
-  'Climate Anomaly': ['climate crisis', 'climate anomaly', 'extreme weather', 'heatwave', 'drought', 'flood', 'drought crisis', 'climate disaster'],
-  'Port Congestion': ['port congestion', 'port strike', 'port closure', 'shipping delay', 'vessel congestion', 'terminal shutdown'],
-  'Conflict': ['military tension', 'border conflict', 'territorial dispute', 'mobilization', 'military buildup', 'nuclear threat', 'missile test']
-};
-
-function isRelevantEvent(title, description) {
-  const text = `${title} ${description}`.toLowerCase();
-  
-  // Must contain EXACTLY ONE of the 8 critical event types
-  for (const [category, keywords] of Object.entries(CRITICAL_KEYWORDS)) {
-    if (keywords.some(k => text.includes(k))) {
-      return true;  // Match found - keep this event
+    const CRITICAL_KEYWORDS = {
+      'War': ['war', 'conflict', 'military action', 'armed conflict', 'battle', 'combat', 'fighting', 'attack', 'strike', 'invasion', 'military operation'],
+      'Sanctions': ['sanction', 'sanctions', 'embargo', 'trade ban', 'restrictions', 'penalty', 'ban'],
+      'Tariffs': ['tariff', 'tariffs', 'duties', 'import duties', 'export duties', 'trade tax'],
+      'Trade Ban': ['trade ban', 'export ban', 'import ban', 'export control', 'trade restriction', 'export restriction'],
+      'Export Control': ['export control', 'technology ban', 'chip ban', 'semiconductor ban', 'dual-use', 'restricted export'],
+      'Climate Anomaly': ['climate crisis', 'climate anomaly', 'extreme weather', 'heatwave', 'drought', 'flood', 'drought crisis', 'climate disaster'],
+      'Port Congestion': ['port congestion', 'port strike', 'port closure', 'shipping delay', 'vessel congestion', 'terminal shutdown'],
+      'Conflict': ['military tension', 'border conflict', 'territorial dispute', 'mobilization', 'military buildup', 'nuclear threat', 'missile test']
+    };
+    
+    function isRelevantEvent(title, description) {
+      const text = `${title} ${description}`.toLowerCase();
+      for (const [category, keywords] of Object.entries(CRITICAL_KEYWORDS)) {
+        if (keywords.some(k => text.includes(k))) {
+          return true;
+        }
+      }
+      return false;
     }
-  }
-  return false;  // No match - discard
-}
-
-  function categorizeEvent(title, description) {
-  const text = (title + ' ' + description).toLowerCase();
-  
-  // Check each critical category in order
-  for (const [category, keywords] of Object.entries(CRITICAL_KEYWORDS)) {
-    if (keywords.some(k => text.includes(k))) {
-      return category;
+    
+    function categorizeEvent(title, description) {
+      const text = (title + ' ' + description).toLowerCase();
+      for (const [category, keywords] of Object.entries(CRITICAL_KEYWORDS)) {
+        if (keywords.some(k => text.includes(k))) {
+          return category;
+        }
+      }
+      return 'Conflict';
     }
-  }
-  return 'Conflict';  // Default
-}
-  ];
     
     // ===================== Feed pipeline =====================
     function stripHtml(s='') {
